@@ -18,6 +18,6 @@ START_TEXT_SIZE = 16
 START_FONT = 'arial black'
 
 # Player settings
-PLAYER_START_POS = vec(1, 1)
+# PLAYER_START_POS = 0
 
 # Enemy settings
