@@ -2,6 +2,7 @@ import pygame
 import sys
 from settings import *
 from player_class import *
+from ghost_class import *
 
 pygame.init()
 vec = pygame.math.Vector2
@@ -18,9 +19,12 @@ class App:
         self.cell_height = MAZE_HEIGHT // 30
         self.walls = []
         self.coins = []
+        self.ghosts = []
+        self.g_pos = []
         self.p_pos = None
         self.load()
         self.player = Player(self, self.p_pos)
+        self.make_ghosts()
 
     def run(self):
         while self.running:
@@ -62,6 +66,12 @@ class App:
                         self.coins.append(vec(xidx, yidx))
                     elif char == 'P':
                         self.p_pos = vec(xidx, yidx)
+                    elif char in ['2', '3', '4', '5']:
+                        self.g_pos.append(vec(xidx, yidx))
+
+    def make_ghosts(self):
+        for pos in self.g_pos:
+            self.ghosts.append(Ghost(self, pos))
 
     def draw_grid(self):
         for x in range(MAZE_WIDTH // self.cell_width):
@@ -111,6 +121,8 @@ class App:
 
     def play_update(self):
         self.player.update()
+        for ghost in self.ghosts:
+            ghost.update()
 
     def play_draw(self):
         self.screen.fill(BLACK)
@@ -120,6 +132,9 @@ class App:
         self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [40, 0], 18, WHITE, START_FONT)
         self.draw_text('HIGH SCORE: 0', self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
         self.player.draw()
+        for ghost in self.ghosts:
+            ghost.draw()
+
         pygame.display.update()
 
     def draw_coins(self):
