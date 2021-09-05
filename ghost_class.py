@@ -12,12 +12,23 @@ class Ghost:
         self.radius = self.app.cell_width // 2.3
         self.number = number
         self.color = self.set_color()
+        self.direction = vec(1, 0)
+        self.personality = self.set_personality()
+        print(self.personality)
 
     def update(self):
-        pass
+        self.pixel_pos += self.direction
+        if self.time_to_move():
+            self.move()
 
     def draw(self):
         pygame.draw.circle(self.app.screen, self.color, self.pixel_pos, self.radius)
+
+    def time_to_move(self):
+        pass
+
+    def move(self):
+        pass
 
     def get_pixel_pos(self):
         return vec(
@@ -34,3 +45,13 @@ class Ghost:
             return (189, 29, 29)
         elif self.number == 3:
             return (215, 159, 33)
+
+    def set_personality(self):
+        if self.number == 0:
+            return 'speedy'
+        elif self.number == 1:
+            return 'slow'
+        elif self.number == 2:
+            return 'random'
+        elif self.number == 3:
+            return 'scared'
