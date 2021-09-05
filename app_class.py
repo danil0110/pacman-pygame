@@ -68,10 +68,12 @@ class App:
                         self.p_pos = vec(xidx, yidx)
                     elif char in ['2', '3', '4', '5']:
                         self.g_pos.append(vec(xidx, yidx))
+                    elif char == 'B':
+                        pygame.draw.rect(self.background, BLACK, (xidx * self.cell_width, yidx * self.cell_height, self.cell_width, self.cell_height))
 
     def make_ghosts(self):
-        for pos in self.g_pos:
-            self.ghosts.append(Ghost(self, pos))
+        for idx, pos in enumerate(self.g_pos):
+            self.ghosts.append(Ghost(self, pos, idx))
 
     def draw_grid(self):
         for x in range(MAZE_WIDTH // self.cell_width):

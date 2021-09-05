@@ -12,12 +12,13 @@ class Player:
         self.pixel_pos = self.get_pixel_pos()
         self.direction = vec(1, 0)
         self.stored_direction = None
+        self.speed = 2
         self.able_to_move = True
         self.current_score = 0
 
     def update(self):
         if self.able_to_move:
-            self.pixel_pos += self.direction
+            self.pixel_pos += self.direction * self.speed
         if self.time_to_move():
             if self.stored_direction is not None:
                 self.direction = self.stored_direction
