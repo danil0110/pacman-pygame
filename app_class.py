@@ -12,8 +12,8 @@ class App:
         self.clock = pygame.time.Clock()
         self.running = True
         self.state = 'start'
-        self.cell_width = WIDTH // 28
-        self.cell_height = HEIGHT // 30
+        self.cell_width = MAZE_WIDTH // 28
+        self.cell_height = MAZE_HEIGHT // 30
 
         self.load()
 
@@ -45,13 +45,13 @@ class App:
 
     def load(self):
         self.background = pygame.image.load('maze.png')
-        self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
+        self.background = pygame.transform.scale(self.background, (MAZE_WIDTH, MAZE_HEIGHT))
 
     def draw_grid(self):
-        for x in range(WIDTH // self.cell_width):
-            pygame.draw.line(self.screen, GREY, (x * self.cell_width, 0), (x * self.cell_width, HEIGHT))
-        for y in range(HEIGHT // self.cell_height):
-            pygame.draw.line(self.screen, GREY, (0, y * self.cell_height), (WIDTH, y * self.cell_height))
+        for x in range(MAZE_WIDTH // self.cell_width):
+            pygame.draw.line(self.background, GREY, (x * self.cell_width, 0), (x * self.cell_width, MAZE_HEIGHT))
+        for y in range(MAZE_HEIGHT // self.cell_height):
+            pygame.draw.line(self.background, GREY, (0, y * self.cell_height), (MAZE_WIDTH, y * self.cell_height))
 
 # START
     def start_events(self):
@@ -71,7 +71,7 @@ class App:
         self.draw_text('1 PLAYER ONLY', self.screen, [WIDTH // 2, HEIGHT // 2 + 25], START_TEXT_SIZE,
                        (44, 167, 198), START_FONT, True)
         self.draw_text('HIGH SCORE', self.screen, [3, 0], START_TEXT_SIZE,
-                       (255, 255, 255), START_FONT)
+                       WHITE, START_FONT)
         pygame.display.update()
 
 # PLAY
@@ -84,6 +84,9 @@ class App:
         pass
 
     def play_draw(self):
-        self.screen.blit(self.background, (0, 0))
+        self.screen.fill(BLACK)
+        self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
         self.draw_grid()
+        self.draw_text('CURRENT SCORE: 0', self.screen, [40, 0], 18, WHITE, START_FONT)
+        self.draw_text('HIGH SCORE: 0', self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
         pygame.display.update()
