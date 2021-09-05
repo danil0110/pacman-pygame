@@ -4,6 +4,7 @@ FPS = 60
 
 # Color settings
 BLACK = (0, 0, 0)
+RED = (255, 0, 0)
 
 # Font settings
 START_TEXT_SIZE = 16
