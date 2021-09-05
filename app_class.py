@@ -16,6 +16,7 @@ class App:
         self.cell_width = MAZE_WIDTH // 28
         self.cell_height = MAZE_HEIGHT // 30
         self.player = Player(self, PLAYER_START_POS)
+        self.walls = []
 
         self.load()
 
@@ -49,11 +50,20 @@ class App:
         self.background = pygame.image.load('maze.png')
         self.background = pygame.transform.scale(self.background, (MAZE_WIDTH, MAZE_HEIGHT))
 
+        # Opening maze file and creating walls list with their coords
+        with open('walls.txt', 'r') as file:
+            for yidx, line in enumerate(file):
+                for xidx, char in enumerate(line):
+                    if char == '1':
+                        self.walls.append(vec(xidx, yidx))
+
     def draw_grid(self):
         for x in range(MAZE_WIDTH // self.cell_width):
             pygame.draw.line(self.background, GREY, (x * self.cell_width, 0), (x * self.cell_width, MAZE_HEIGHT))
         for y in range(MAZE_HEIGHT // self.cell_height):
             pygame.draw.line(self.background, GREY, (0, y * self.cell_height), (MAZE_WIDTH, y * self.cell_height))
+        for wall in self.walls:
+            pygame.draw.rect(self.background, (0, 255, 0), (wall.x * self.cell_width, wall.y * self.cell_height, self.cell_width, self.cell_height))
 
 # START
     def start_events(self):
@@ -97,7 +107,7 @@ class App:
     def play_draw(self):
         self.screen.fill(BLACK)
         self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
-        self.draw_grid()
+        # self.draw_grid()
         self.draw_text('CURRENT SCORE: 0', self.screen, [40, 0], 18, WHITE, START_FONT)
         self.draw_text('HIGH SCORE: 0', self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
         self.player.draw()
