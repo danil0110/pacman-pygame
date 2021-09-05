@@ -9,7 +9,7 @@ vec = pygame.math.Vector2
 
 class App:
     def __init__(self):
-        pygame.display.set_caption('Pacman')
+        pygame.display.set_caption('Pac-Man')
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
@@ -115,7 +115,7 @@ class App:
         self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
         self.draw_coins()
         # self.draw_grid()
-        self.draw_text('CURRENT SCORE: 0', self.screen, [40, 0], 18, WHITE, START_FONT)
+        self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [40, 0], 18, WHITE, START_FONT)
         self.draw_text('HIGH SCORE: 0', self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
         self.player.draw()
         pygame.display.update()

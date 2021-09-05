@@ -13,6 +13,7 @@ class Player:
         self.direction = vec(1, 0)
         self.stored_direction = None
         self.able_to_move = True
+        self.current_score = 0
 
     def update(self):
         if self.able_to_move:
@@ -26,6 +27,9 @@ class Player:
         self.grid_pos[0] = (self.pixel_pos[0] + self.app.cell_width // 2) // self.app.cell_width
         self.grid_pos[1] = (self.pixel_pos[1] - TOP_BOTTOM_MARGIN + self.app.cell_height // 2) // self.app.cell_height + 1
 
+        if self.on_coin():
+            self.eat_coin()
+
     def draw(self):
         pygame.draw.circle(self.app.screen, PLAYER_COLOR, (int(self.pixel_pos.x + self.app.cell_width // 2), int(self.pixel_pos.y)),
                            self.app.cell_width // 2 - 2)
@@ -34,6 +38,15 @@ class Player:
         # pygame.draw.rect(self.app.screen, RED, (self.grid_pos[0] * self.app.cell_width, self.grid_pos[1]
         #                                         * self.app.cell_height + TOP_BOTTOM_MARGIN // 2, self.app.cell_width,
         #                                         self.app.cell_height), 1)
+
+    def on_coin(self):
+        if self.grid_pos in self.app.coins:
+            return True
+        return False
+
+    def eat_coin(self):
+        self.app.coins.remove(self.grid_pos)
+        self.current_score += 1
 
     def move(self, direction):
         self.stored_direction = direction
