@@ -13,7 +13,7 @@ class Ghost:
         self.radius = self.app.cell_width // 2.3
         self.number = number
         self.color = self.set_color()
-        self.direction = vec(1, 0)
+        self.direction = vec(0, 0)
         self.personality = self.set_personality()
         self.target = None
         self.speed = self.set_speed()
@@ -43,21 +43,21 @@ class Ghost:
         if self.personality == 'speedy' or self.personality == 'slow':
             return self.app.player.grid_pos
         else:
-            if self.app.player.grid_pos.x > COLS // 2 and self.app.player.grid_pos.y > ROWS // 2:
+            if self.app.player.grid_pos[0] > COLS // 2 and self.app.player.grid_pos[1] > ROWS // 2:
                 return vec(1, 1)
-            if self.app.player.grid_pos.x > COLS // 2 and self.app.player.grid_pos.y < ROWS // 2:
+            if self.app.player.grid_pos[0] > COLS // 2 and self.app.player.grid_pos[1] < ROWS // 2:
                 return vec(1, ROWS - 2)
-            if self.app.player.grid_pos.x < COLS // 2 and self.app.player.grid_pos.y > ROWS // 2:
+            if self.app.player.grid_pos[0] < COLS // 2 and self.app.player.grid_pos[1] > ROWS // 2:
                 return vec(COLS - 2, 1)
             else:
                 return vec(COLS - 2, ROWS - 2)
 
     def time_to_move(self):
         if self.pixel_pos.x % self.app.cell_width == 0:
-            if self.direction == vec(1, 0) or self.direction == vec(-1, 0):
+            if self.direction == vec(1, 0) or self.direction == vec(-1, 0) or self.direction == vec(0, 0):
                 return True
         if int(self.pixel_pos.y + TOP_BOTTOM_MARGIN // 2) % self.app.cell_height == 0:
-            if self.direction == vec(0, 1) or self.direction == vec(0, -1):
+            if self.direction == vec(0, 1) or self.direction == vec(0, -1) or self.direction == vec(0, 0):
                 return True
         else:
             return False

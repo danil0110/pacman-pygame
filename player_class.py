@@ -8,13 +8,14 @@ vec = pygame.math.Vector2
 class Player:
     def __init__(self, app, pos):
         self.app = app
-        self.grid_pos = pos
+        self.grid_pos = vec(pos[0], pos[1])
         self.pixel_pos = self.get_pixel_pos()
         self.direction = vec(1, 0)
         self.stored_direction = None
         self.speed = 2
         self.able_to_move = True
         self.current_score = 0
+        self.lives = 3
 
     def update(self):
         if self.able_to_move:
@@ -34,6 +35,10 @@ class Player:
     def draw(self):
         pygame.draw.circle(self.app.screen, PLAYER_COLOR, (int(self.pixel_pos.x + self.app.cell_width // 2), int(self.pixel_pos.y)),
                            self.app.cell_width // 2 - 2)
+
+        # Player's lives
+        for x in range(self.lives):
+            pygame.draw.circle(self.app.screen, PLAYER_COLOR, (15 + x * 25, HEIGHT - 15), 10)
 
         # Grid position rectangle
         # pygame.draw.rect(self.app.screen, RED, (self.grid_pos[0] * self.app.cell_width, self.grid_pos[1]
@@ -65,10 +70,10 @@ class Player:
 
     def time_to_move(self):
         if self.pixel_pos.x % self.app.cell_width == 0:
-            if self.direction == vec(1, 0) or self.direction == vec(-1, 0):
+            if self.direction == vec(1, 0) or self.direction == vec(-1, 0) or self.direction == vec(0, 0):
                 return True
         if int(self.pixel_pos.y + TOP_BOTTOM_MARGIN // 2) % self.app.cell_height == 0:
-            if self.direction == vec(0, 1) or self.direction == vec(0, -1):
+            if self.direction == vec(0, 1) or self.direction == vec(0, -1) or self.direction == vec(0, 0):
                 return True
         else:
             return False

@@ -1,5 +1,6 @@
 import pygame
 import sys
+import copy
 from settings import *
 from player_class import *
 from ghost_class import *
@@ -23,7 +24,7 @@ class App:
         self.g_pos = []
         self.p_pos = None
         self.load()
-        self.player = Player(self, self.p_pos)
+        self.player = Player(self, copy.copy(self.p_pos))
         self.make_ghosts()
 
     def run(self):
@@ -65,7 +66,7 @@ class App:
                     elif char == 'C':
                         self.coins.append(vec(xidx, yidx))
                     elif char == 'P':
-                        self.p_pos = vec(xidx, yidx)
+                        self.p_pos = [xidx, yidx]
                     elif char in ['2', '3', '4', '5']:
                         self.g_pos.append(vec(xidx, yidx))
                     elif char == 'B':
@@ -126,6 +127,10 @@ class App:
         for ghost in self.ghosts:
             ghost.update()
 
+        for ghost in self.ghosts:
+            if ghost.grid_pos == self.player.grid_pos:
+                self.decrease_lives()
+
     def play_draw(self):
         self.screen.fill(BLACK)
         self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
@@ -138,6 +143,15 @@ class App:
             ghost.draw()
 
         pygame.display.update()
+
+    def decrease_lives(self):
+        self.player.lives -= 1
+        if self.player.lives == 0:
+            self.state = 'game over'
+        else:
+            self.player.grid_pos = vec(self.p_pos)
+            self.player.pixel_pos = self.player.get_pixel_pos()
+            self.player.direction *= 0
 
     def draw_coins(self):
         for coin in self.coins:
