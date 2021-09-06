@@ -15,11 +15,15 @@ class Ghost:
         self.color = self.set_color()
         self.direction = vec(1, 0)
         self.personality = self.set_personality()
+        self.target = None
+        self.speed = self.set_speed()
 
     def update(self):
-        self.pixel_pos += self.direction
-        if self.time_to_move():
-            self.move()
+        if self.target != self.grid_pos:
+            self.target = self.set_target()
+            self.pixel_pos += self.direction * self.speed
+            if self.time_to_move():
+                self.move()
 
         # Grid position in reference to pixel position
         self.grid_pos[0] = (self.pixel_pos[0] + self.app.cell_width // 2) // self.app.cell_width
@@ -27,6 +31,26 @@ class Ghost:
 
     def draw(self):
         pygame.draw.circle(self.app.screen, self.color, (int(self.pixel_pos.x + self.app.cell_width // 2), int(self.pixel_pos.y)), self.radius)
+
+    def set_speed(self):
+        if self.personality == 'speedy':
+            speed = 2
+        else:
+            speed = 1
+        return speed
+
+    def set_target(self):
+        if self.personality == 'speedy' or self.personality == 'slow':
+            return self.app.player.grid_pos
+        else:
+            if self.app.player.grid_pos.x > COLS // 2 and self.app.player.grid_pos.y > ROWS // 2:
+                return vec(1, 1)
+            if self.app.player.grid_pos.x > COLS // 2 and self.app.player.grid_pos.y < ROWS // 2:
+                return vec(1, ROWS - 2)
+            if self.app.player.grid_pos.x < COLS // 2 and self.app.player.grid_pos.y > ROWS // 2:
+                return vec(COLS - 2, 1)
+            else:
+                return vec(COLS - 2, ROWS - 2)
 
     def time_to_move(self):
         if self.pixel_pos.x % self.app.cell_width == 0:
@@ -42,22 +66,22 @@ class Ghost:
         if self.personality == 'random':
             self.direction = self.get_random_direction()
         if self.personality == 'speedy':
-            self.direction = self.get_path_direction()
+            self.direction = self.get_path_direction(self.target)
         if self.personality == 'slow':
-            self.direction = self.get_path_direction()
+            self.direction = self.get_path_direction(self.target)
         if self.personality == 'scared':
-            self.direction = self.get_path_direction()
+            self.direction = self.get_path_direction(self.target)
         # self.direction = self.get_random_direction()
 
-    def get_path_direction(self):
-        next_cell = self.find_next_cell_in_path()
+    def get_path_direction(self, target):
+        next_cell = self.find_next_cell_in_path(target)
         xdir = next_cell[0] - self.grid_pos[0]
         ydir = next_cell[1] - self.grid_pos[1]
         return vec(xdir, ydir)
 
-    def find_next_cell_in_path(self):
+    def find_next_cell_in_path(self, target):
         path = self.BFS([int(self.grid_pos.x), int(self.grid_pos.y)],
-                        [int(self.app.player.grid_pos.x), int(self.app.player.grid_pos.y)])
+                        [int(target[0]), int(target[1])])
         return path[1]
 
     def BFS(self, start, target):
