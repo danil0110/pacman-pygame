@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os.path
 import copy
 from settings import *
 from player_class import *
@@ -24,7 +25,8 @@ class App:
         self.g_pos = []
         self.p_pos = None
         self.load()
-        self.player = Player(self, copy.copy(self.p_pos))
+        self.player = Player(self, vec(self.p_pos))
+        self.get_high_score()
         self.make_ghosts()
 
     def run(self):
@@ -37,6 +39,10 @@ class App:
                 self.play_events()
                 self.play_update()
                 self.play_draw()
+            elif self.state == 'game over':
+                self.game_over_events()
+                self.game_over_update()
+                self.game_over_draw()
             else:
                 self.running = False
             self.clock.tick(FPS)
@@ -68,13 +74,27 @@ class App:
                     elif char == 'P':
                         self.p_pos = [xidx, yidx]
                     elif char in ['2', '3', '4', '5']:
-                        self.g_pos.append(vec(xidx, yidx))
+                        self.g_pos.append([xidx, yidx])
                     elif char == 'B':
                         pygame.draw.rect(self.background, BLACK, (xidx * self.cell_width, yidx * self.cell_height, self.cell_width, self.cell_height))
 
+    # Getting high score from a file
+    def get_high_score(self):
+        # Check if file exists
+        if os.path.isfile('highscore.txt'):
+            with open('highscore.txt', 'r') as file:
+                self.player.high_score = int(file.read())
+        else:
+            self.set_high_score(0)
+
+    def set_high_score(self, new_score):
+        self.player.high_score = new_score
+        with open('highscore.txt', 'w') as file:
+            file.write(str(new_score))
+
     def make_ghosts(self):
         for idx, pos in enumerate(self.g_pos):
-            self.ghosts.append(Ghost(self, pos, idx))
+            self.ghosts.append(Ghost(self, vec(pos), idx))
 
     def draw_grid(self):
         for x in range(MAZE_WIDTH // self.cell_width):
@@ -85,6 +105,21 @@ class App:
         #     pygame.draw.rect(self.background, (0, 255, 0), (wall.x * self.cell_width, wall.y * self.cell_height, self.cell_width, self.cell_height))
         for coin in self.coins:
             pygame.draw.rect(self.background, (167, 167, 0), (coin.x * self.cell_width, coin.y * self.cell_height, self.cell_width, self.cell_height))
+
+    def restart(self):
+        self.player.lives = 3
+        self.player.current_score = 0
+        self.player.reset_position()
+        for ghost in self.ghosts:
+            ghost.reset_position()
+
+        self.coins = []
+        with open('walls.txt', 'r') as file:
+            for yidx, line in enumerate(file):
+                for xidx, char in enumerate(line):
+                    if char == 'C':
+                        self.coins.append(vec(xidx, yidx))
+        self.state = 'play'
 
 # START
     def start_events(self):
@@ -103,7 +138,7 @@ class App:
                        (170, 132, 58), START_FONT, True)
         self.draw_text('1 PLAYER ONLY', self.screen, [WIDTH // 2, HEIGHT // 2 + 25], START_TEXT_SIZE,
                        (44, 167, 198), START_FONT, True)
-        self.draw_text('HIGH SCORE', self.screen, [3, 0], START_TEXT_SIZE,
+        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [3, 0], START_TEXT_SIZE,
                        WHITE, START_FONT)
         pygame.display.update()
 
@@ -137,7 +172,7 @@ class App:
         self.draw_coins()
         # self.draw_grid()
         self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [40, 0], 18, WHITE, START_FONT)
-        self.draw_text('HIGH SCORE: 0', self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
+        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
         self.player.draw()
         for ghost in self.ghosts:
             ghost.draw()
@@ -148,13 +183,41 @@ class App:
         self.player.lives -= 1
         if self.player.lives == 0:
             self.state = 'game over'
+            if self.player.current_score > self.player.high_score:
+                self.set_high_score(self.player.current_score)
         else:
-            self.player.grid_pos = vec(self.p_pos)
-            self.player.pixel_pos = self.player.get_pixel_pos()
-            self.player.direction *= 0
+            self.player.reset_position()
+            for ghost in self.ghosts:
+                ghost.reset_position()
 
     def draw_coins(self):
         for coin in self.coins:
             pygame.draw.circle(self.screen, (167, 167, 0),
                                (int(coin.x * self.cell_width + self.cell_width // 2),
                                 int(coin.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 2)
+
+# GAME OVER
+    def game_over_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                self.restart()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.running = False
+
+    def game_over_update(self):
+        pass
+
+    def game_over_draw(self):
+        self.screen.fill(BLACK)
+        quit_text = 'PRESS ESC TO QUIT'
+        replay_text = 'PRESS SPACE BAR TO PLAY AGAIN'
+        current_score_text = 'CURRENT SCORE: {}'.format(self.player.current_score)
+        high_score_text = 'HIGH SCORE: {}'.format(self.player.high_score)
+        self.draw_text('GAME OVER', self.screen, [WIDTH // 2, 80], 52, RED, 'arial black', True)
+        self.draw_text(current_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
+        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 200], 24, WHITE, 'arial', True)
+        self.draw_text(replay_text, self.screen, [WIDTH // 2, HEIGHT // 2], 28, WHITE, 'arial', True)
+        self.draw_text(quit_text, self.screen, [WIDTH // 2,  HEIGHT // 2 + 100], 24, GREY, 'arial', True)
+        pygame.display.update()

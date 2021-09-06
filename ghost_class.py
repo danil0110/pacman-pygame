@@ -9,6 +9,7 @@ class Ghost:
     def __init__(self, app, pos, number):
         self.app = app
         self.grid_pos = pos
+        self.starting_pos = [pos.x, pos.y]
         self.pixel_pos = self.get_pixel_pos()
         self.radius = self.app.cell_width // 2.3
         self.number = number
@@ -136,9 +137,14 @@ class Ghost:
 
     def get_pixel_pos(self):
         return vec(
-            (self.grid_pos.x * self.app.cell_width) + self.app.cell_width // 2,
+            (self.grid_pos.x * self.app.cell_width),
             (self.grid_pos.y * self.app.cell_height) + TOP_BOTTOM_MARGIN // 2 + self.app.cell_height // 2
         )
+
+    def reset_position(self):
+        self.grid_pos = vec(self.starting_pos)
+        self.pixel_pos = self.get_pixel_pos()
+        self.direction *= 0
 
     def set_color(self):
         if self.number == 0:

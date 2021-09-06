@@ -8,14 +8,16 @@ vec = pygame.math.Vector2
 class Player:
     def __init__(self, app, pos):
         self.app = app
-        self.grid_pos = vec(pos[0], pos[1])
+        self.grid_pos = pos
+        self.starting_pos = [pos.x, pos.y]
         self.pixel_pos = self.get_pixel_pos()
         self.direction = vec(1, 0)
         self.stored_direction = None
         self.speed = 2
         self.able_to_move = True
         self.current_score = 0
-        self.lives = 3
+        self.high_score = 0
+        self.lives = 1
 
     def update(self):
         if self.able_to_move:
@@ -67,6 +69,11 @@ class Player:
             (self.grid_pos.x * self.app.cell_width) + self.app.cell_width // 2,
             (self.grid_pos.y * self.app.cell_height) + TOP_BOTTOM_MARGIN // 2 + self.app.cell_height // 2
         )
+
+    def reset_position(self):
+        self.grid_pos = vec(self.starting_pos)
+        self.pixel_pos = self.get_pixel_pos()
+        self.direction *= 0
 
     def time_to_move(self):
         if self.pixel_pos.x % self.app.cell_width == 0:
