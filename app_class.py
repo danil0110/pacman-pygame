@@ -213,11 +213,9 @@ class App:
         self.screen.fill(BLACK)
         quit_text = 'PRESS ESC TO QUIT'
         replay_text = 'PRESS SPACE BAR TO PLAY AGAIN'
-        current_score_text = 'CURRENT SCORE: {}'.format(self.player.current_score)
         high_score_text = 'HIGH SCORE: {}'.format(self.player.high_score)
         self.draw_text('GAME OVER', self.screen, [WIDTH // 2, 80], 52, RED, 'arial black', True)
-        self.draw_text(current_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
-        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 200], 24, WHITE, 'arial', True)
+        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
         self.draw_text(replay_text, self.screen, [WIDTH // 2, HEIGHT // 2], 28, WHITE, 'arial', True)
         self.draw_text(quit_text, self.screen, [WIDTH // 2,  HEIGHT // 2 + 100], 24, GREY, 'arial', True)
         pygame.display.update()
