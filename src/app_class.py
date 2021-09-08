@@ -62,11 +62,11 @@ class App:
         screen.blit(text, pos)
 
     def load(self):
-        self.background = pygame.image.load('maze.png')
+        self.background = pygame.image.load('assets/maze.png')
         self.background = pygame.transform.scale(self.background, (MAZE_WIDTH, MAZE_HEIGHT))
 
         # Opening maze file and creating walls list with their coords
-        with open('walls.txt', 'r') as file:
+        with open('assets/walls.txt', 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == '1':
@@ -85,15 +85,15 @@ class App:
     # Getting high score from a file
     def get_high_score(self):
         # Check if file exists
-        if os.path.isfile('highscore.txt'):
-            with open('highscore.txt', 'r') as file:
+        if os.path.isfile('../highscore.txt'):
+            with open('../highscore.txt', 'r') as file:
                 self.player.high_score = int(file.read())
         else:
             self.set_high_score(0)
 
     def set_high_score(self, new_score):
         self.player.high_score = new_score
-        with open('highscore.txt', 'w') as file:
+        with open('../highscore.txt', 'w') as file:
             file.write(str(new_score))
 
     def make_ghosts(self):
@@ -121,7 +121,7 @@ class App:
 
         self.coins = []
         self.super_food = []
-        with open('walls.txt', 'r') as file:
+        with open('assets/walls.txt', 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == 'C':

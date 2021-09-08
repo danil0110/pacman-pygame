@@ -1,5 +1,5 @@
 .idea
 venv
-__pycache__
-app_class.pyc
+src/__pycache__
+src/app_class.pyc
 highscore.txt
