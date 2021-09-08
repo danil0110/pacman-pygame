@@ -207,8 +207,8 @@ class App:
         self.draw_coins()
         self.draw_super_food()
         # self.draw_grid()
-        self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [40, 0], 18, WHITE, START_FONT)
-        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
+        self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [20, 0], 18, WHITE, START_FONT)
+        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [WIDTH // 2 + 40, 0], 18, WHITE, START_FONT)
         self.player.draw()
         for ghost in self.ghosts:
             ghost.draw()
@@ -219,6 +219,7 @@ class App:
         self.player.lives -= 1
         if self.player.lives == 0:
             self.state = 'game over'
+            self.player.current_score_saved = self.player.current_score
             if self.player.current_score > self.player.high_score:
                 self.set_high_score(self.player.current_score)
         else:
@@ -233,10 +234,10 @@ class App:
                                 int(coin.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 2)
 
     def draw_super_food(self):
-        for super in self.super_food:
+        for food in self.super_food:
             pygame.draw.circle(self.screen, (167, 167, 0),
-                               (int(super.x * self.cell_width + self.cell_width // 2),
-                                int(super.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 5)
+                               (int(food.x * self.cell_width + self.cell_width // 2),
+                                int(food.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 6)
 
 
 # GAME OVER
@@ -257,8 +258,10 @@ class App:
         quit_text = 'PRESS ESC TO QUIT'
         replay_text = 'PRESS SPACE BAR TO PLAY AGAIN'
         high_score_text = 'HIGH SCORE: {}'.format(self.player.high_score)
+        current_score_text = 'CURRENT SCORE: {}'.format(self.player.current_score_saved)
         self.draw_text('GAME OVER', self.screen, [WIDTH // 2, 80], 52, RED, 'arial black', True)
-        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
+        self.draw_text(current_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
+        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 200], 24, WHITE, 'arial', True)
         self.draw_text(replay_text, self.screen, [WIDTH // 2, HEIGHT // 2], 28, WHITE, 'arial', True)
         self.draw_text(quit_text, self.screen, [WIDTH // 2,  HEIGHT // 2 + 100], 24, GREY, 'arial', True)
         pygame.display.update()

@@ -19,8 +19,9 @@ class Player:
         self.angry_start_time = None
         self.kill_multiplier = 1
         self.current_score = 0
+        self.current_score_saved = 0
         self.high_score = 0
-        self.lives = 1
+        self.lives = 3
         self.winner = False
 
     def update(self):
