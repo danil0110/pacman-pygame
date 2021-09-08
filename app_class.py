@@ -21,6 +21,7 @@ class App:
         self.cell_height = MAZE_HEIGHT // ROWS
         self.walls = []
         self.coins = []
+        self.super_food = []
         self.ghosts = []
         self.g_pos = []
         self.p_pos = None
@@ -71,6 +72,8 @@ class App:
                         self.walls.append(vec(xidx, yidx))
                     elif char == 'C':
                         self.coins.append(vec(xidx, yidx))
+                    elif char == 'S':
+                        self.super_food.append(vec(xidx, yidx))
                     elif char == 'P':
                         self.p_pos = [xidx, yidx]
                     elif char in ['2', '3', '4', '5']:
@@ -170,6 +173,7 @@ class App:
         self.screen.fill(BLACK)
         self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
         self.draw_coins()
+        self.draw_super_food()
         # self.draw_grid()
         self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [40, 0], 18, WHITE, START_FONT)
         self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [WIDTH // 2 + 50, 0], 18, WHITE, START_FONT)
@@ -195,6 +199,13 @@ class App:
             pygame.draw.circle(self.screen, (167, 167, 0),
                                (int(coin.x * self.cell_width + self.cell_width // 2),
                                 int(coin.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 2)
+
+    def draw_super_food(self):
+        for super in self.super_food:
+            pygame.draw.circle(self.screen, (167, 167, 0),
+                               (int(super.x * self.cell_width + self.cell_width // 2),
+                                int(super.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 5)
+
 
 # GAME OVER
     def game_over_events(self):

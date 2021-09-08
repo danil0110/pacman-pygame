@@ -43,6 +43,9 @@ class Ghost:
     def set_target(self):
         if self.personality == 'speedy' or self.personality == 'slow':
             return self.app.player.grid_pos
+        elif self.personality == 'scared':
+            # return vec(self.starting_pos[0], self.starting_pos[1])
+            return self.starting_pos
         else:
             if self.app.player.grid_pos[0] > COLS // 2 and self.app.player.grid_pos[1] > ROWS // 2:
                 return vec(1, 1)
@@ -66,11 +69,11 @@ class Ghost:
     def move(self):
         if self.personality == 'random':
             self.direction = self.get_random_direction()
-        if self.personality == 'speedy':
+        elif self.personality == 'speedy':
             self.direction = self.get_path_direction(self.target)
-        if self.personality == 'slow':
+        elif self.personality == 'slow':
             self.direction = self.get_path_direction(self.target)
-        if self.personality == 'scared':
+        elif self.personality == 'scared':
             self.direction = self.get_path_direction(self.target)
         # self.direction = self.get_random_direction()
 
@@ -159,9 +162,11 @@ class Ghost:
     def set_personality(self):
         if self.number == 0:
             return 'speedy'
-        elif self.number == 1:
+        # elif self.number == 1:
+        #     return 'slow'
+        # elif self.number == 2:
+        #     return 'random'
+        # elif self.number == 3:
+        #     return 'scared'
+        else:
             return 'slow'
-        elif self.number == 2:
-            return 'random'
-        elif self.number == 3:
-            return 'scared'

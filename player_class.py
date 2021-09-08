@@ -31,8 +31,10 @@ class Player:
         self.grid_pos[0] = (self.pixel_pos[0] + self.app.cell_width // 2) // self.app.cell_width
         self.grid_pos[1] = (self.pixel_pos[1] - TOP_BOTTOM_MARGIN + self.app.cell_height // 2) // self.app.cell_height + 1
 
-        if self.on_coin():
+        if self.on_food(self.app.coins):
             self.eat_coin()
+        if self.on_food(self.app.super_food):
+            self.eat_super_food()
 
     def draw(self):
         pygame.draw.circle(self.app.screen, PLAYER_COLOR, (int(self.pixel_pos.x + self.app.cell_width // 2), int(self.pixel_pos.y)),
@@ -47,8 +49,8 @@ class Player:
         #                                         * self.app.cell_height + TOP_BOTTOM_MARGIN // 2, self.app.cell_width,
         #                                         self.app.cell_height), 1)
 
-    def on_coin(self):
-        if self.grid_pos in self.app.coins:
+    def on_food(self, food):
+        if self.grid_pos in food:
             if self.pixel_pos.x % self.app.cell_width == 0:
                 if self.direction == vec(1, 0) or self.direction == vec(-1, 0):
                     return True
@@ -60,6 +62,14 @@ class Player:
     def eat_coin(self):
         self.app.coins.remove(self.grid_pos)
         self.current_score += 1
+
+    def eat_super_food(self):
+        self.app.super_food.remove(self.grid_pos)
+        self.current_score += 1
+
+        for ghost in self.app.ghosts:
+            ghost.personality = 'scared'
+            ghost.target = vec(ghost.starting_pos[0], ghost.starting_pos[1])
 
     def move(self, direction):
         self.stored_direction = direction
