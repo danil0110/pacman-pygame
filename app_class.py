@@ -25,6 +25,7 @@ class App:
         self.ghosts = []
         self.g_pos = []
         self.p_pos = None
+        self.pause_time = None
         self.load()
         self.player = Player(self, vec(self.p_pos))
         self.get_high_score()
@@ -109,12 +110,14 @@ class App:
         for coin in self.coins:
             pygame.draw.rect(self.background, (167, 167, 0), (coin.x * self.cell_width, coin.y * self.cell_height, self.cell_width, self.cell_height))
 
-    def restart(self):
-        self.player.lives = 3
-        self.player.current_score = 0
+    def restart(self, is_after_win = False):
+        if not is_after_win:
+            self.player.lives = 3
+            self.player.current_score = 0
         self.player.reset_position()
         for ghost in self.ghosts:
             ghost.reset_position()
+            ghost.personality = 'slow'
 
         self.coins = []
         self.super_food = []
@@ -126,6 +129,16 @@ class App:
                     if char == 'S':
                         self.super_food.append(vec(xidx, yidx))
         self.state = 'play'
+
+    def win(self):
+        self.player.winner = True
+        self.player.direction *= 0
+        
+        for ghost in self.ghosts:
+            ghost.personality = 'stay'
+            ghost.direction *= 0
+        
+        
 
 # START
     def start_events(self):
@@ -153,7 +166,7 @@ class App:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN and self.player.winner == False:
                 if event.key == pygame.K_UP:
                     self.player.move(vec(0, -1))
                 if event.key == pygame.K_RIGHT:
@@ -164,6 +177,15 @@ class App:
                     self.player.move(vec(-1, 0))
 
     def play_update(self):
+        if self.player.winner:
+            if self.pause_time is None:
+                self.pause_time = pygame.time.get_ticks()
+            seconds = (pygame.time.get_ticks() - self.pause_time) / 1000
+            if seconds > 3:
+                self.pause_time = None
+                self.player.winner = False
+                self.restart(True)
+
         self.player.update()
         for ghost in self.ghosts:
             ghost.update()

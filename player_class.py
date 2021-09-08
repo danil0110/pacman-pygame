@@ -21,6 +21,7 @@ class Player:
         self.current_score = 0
         self.high_score = 0
         self.lives = 1
+        self.winner = False
 
     def update(self):
         if self.able_to_move:
@@ -71,6 +72,8 @@ class Player:
     def eat_coin(self):
         self.app.coins.remove(self.grid_pos)
         self.current_score += 10
+        if self.app.coins.__len__() == 0:
+            self.app.win()
 
     def eat_super_food(self):
         self.app.super_food.remove(self.grid_pos)
