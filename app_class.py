@@ -117,11 +117,14 @@ class App:
             ghost.reset_position()
 
         self.coins = []
+        self.super_food = []
         with open('walls.txt', 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == 'C':
                         self.coins.append(vec(xidx, yidx))
+                    if char == 'S':
+                        self.super_food.append(vec(xidx, yidx))
         self.state = 'play'
 
 # START
@@ -167,7 +170,14 @@ class App:
 
         for ghost in self.ghosts:
             if ghost.grid_pos == self.player.grid_pos:
-                self.decrease_lives()
+                if ghost.personality not in ['scared', 'died']:
+                    self.decrease_lives()
+                else:
+                    self.player.current_score += (2 ** self.player.kill_multiplier) * 100
+                    if self.player.kill_multiplier < 4:
+                        self.player.kill_multiplier += 1
+                    ghost.start_respawn()
+
 
     def play_draw(self):
         self.screen.fill(BLACK)

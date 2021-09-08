@@ -15,6 +15,9 @@ class Player:
         self.stored_direction = None
         self.speed = 2
         self.able_to_move = True
+        self.angry = False
+        self.angry_start_time = None
+        self.kill_multiplier = 1
         self.current_score = 0
         self.high_score = 0
         self.lives = 1
@@ -26,7 +29,13 @@ class Player:
             if self.stored_direction is not None:
                 self.direction = self.stored_direction
             self.able_to_move = self.can_move()
-
+        if self.is_angry():
+            if self.angry_start_time is None:
+                self.angry_start_time = pygame.time.get_ticks()
+            seconds = (pygame.time.get_ticks() - self.angry_start_time) / 1000
+            if seconds > 6:
+                self.set_angry(False)
+            
         # Grid position in reference to pixel position
         self.grid_pos[0] = (self.pixel_pos[0] + self.app.cell_width // 2) // self.app.cell_width
         self.grid_pos[1] = (self.pixel_pos[1] - TOP_BOTTOM_MARGIN + self.app.cell_height // 2) // self.app.cell_height + 1
@@ -61,15 +70,32 @@ class Player:
 
     def eat_coin(self):
         self.app.coins.remove(self.grid_pos)
-        self.current_score += 1
+        self.current_score += 10
 
     def eat_super_food(self):
         self.app.super_food.remove(self.grid_pos)
-        self.current_score += 1
+        self.current_score += 50
+        self.set_angry(True)
+    
+    def set_angry(self, value):
+        self.angry = value
+        if self.angry:
+            for ghost in self.app.ghosts:
+                ghost.personality = 'scared'
+                ghost.color = (50, 50, 216)
+                # ghost.target = vec(ghost.starting_pos[0], ghost.starting_pos[1])
+        else:
+            self.kill_multiplier = 1
+            self.angry_start_time = None
+            for ghost in self.app.ghosts:
+                ghost.personality = ghost.initial_personality
+                ghost.color = ghost.initial_color
+                # ghost.target = vec(ghost.starting_pos[0], ghost.starting_pos[1])
 
-        for ghost in self.app.ghosts:
-            ghost.personality = 'scared'
-            ghost.target = vec(ghost.starting_pos[0], ghost.starting_pos[1])
+    def is_angry(self):
+        if self.angry:
+            return True
+        return False
 
     def move(self, direction):
         self.stored_direction = direction
