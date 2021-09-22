@@ -268,6 +268,7 @@ class App:
 
     def draw_path(self, algorithm):
         for ghost in self.ghosts:
+            ghost.set_algorithm(algorithm)
             if algorithm == 'bfs':
                 path, time = self.calculate_path_and_time(ghost.BFS, ghost)
             elif algorithm == 'dfs':
@@ -280,7 +281,7 @@ class App:
 
             for cell in path:
                 pix_pos = self.get_pixel_pos_from_grid(cell)
-                pygame.draw.rect(self.screen, (0, 255, 0),
+                pygame.draw.rect(self.screen, GREEN,
                                 (pix_pos[0] - 8, pix_pos[1] - 8, self.cell_width - 5, self.cell_height - 5))
 
     def calculate_path_and_time(self, algo_function, ghost):
