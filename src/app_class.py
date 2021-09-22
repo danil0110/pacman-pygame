@@ -267,6 +267,7 @@ class App:
                 self.draw_path('ucs')
 
     def draw_path(self, algorithm):
+        self.play_draw()
         for ghost in self.ghosts:
             ghost.set_algorithm(algorithm)
             if algorithm == 'bfs':
@@ -276,8 +277,8 @@ class App:
             else:
                 path, time = self.calculate_path_and_time(ghost.UCS, ghost)
 
-            self.draw_text('{} - {}'.format(algorithm, time), self.screen, [
-                WIDTH // 2, HEIGHT - 25], 14, GREY, START_FONT)
+            self.draw_text('{} - {}, Length - {}'.format(algorithm, time, len(path)), self.screen, [
+                WIDTH // 2 - 100, HEIGHT - 25], 14, GREY, START_FONT)
 
             for cell in path:
                 pix_pos = self.get_pixel_pos_from_grid(cell)

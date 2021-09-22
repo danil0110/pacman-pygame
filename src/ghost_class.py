@@ -1,5 +1,6 @@
 import pygame
 import random
+from queue import PriorityQueue
 from settings import *
 
 vec = pygame.math.Vector2
@@ -193,7 +194,38 @@ class Ghost:
         return final_path
 
     def UCS(self, start, target):
-        pass
+        grid = [[0 for x in range(28)] for x in range(30)]
+        for cell in self.app.walls:
+            if cell.x < 28 and cell.y < 30:
+                grid[int(cell.y)][int(cell.x)] = 1
+
+        queue = PriorityQueue()
+        queue.put((0, start))
+        visited = []
+        path = []
+
+        while not queue.empty():
+            cost, current = queue.get()
+            visited.append(current)
+            if current == target:
+                break
+
+            neighbours = self.get_neighbours(current, grid)
+            for neighbour in neighbours:
+                next_cell = [neighbour[0] + current[0], neighbour[1] + current[1]]
+                if next_cell not in visited:
+                    if grid[next_cell[1]][next_cell[0]] != 1:
+                        queue.put((cost + 1, next_cell))
+                        path.append({"Current": current, "Next": next_cell})
+
+        final_path = [target]
+        while target != start:
+            for step in path:
+                if step["Next"] == target:
+                    target = step["Current"]
+                    final_path.insert(0, step["Current"])
+
+        return final_path
 
     def set_algorithm(self, value):
         self.algorithm = value
