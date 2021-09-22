@@ -2,6 +2,7 @@ import pygame
 import sys
 import os.path
 import copy
+from random import randint
 from timeit import default_timer as timer
 from settings import *
 from player_class import *
@@ -28,6 +29,7 @@ class App:
         self.p_pos = None
         self.pause_time = None
         self.load()
+        # self.generate_randomly()
         self.player = Player(self, vec(self.p_pos))
         self.get_high_score()
         self.make_ghosts()
@@ -85,6 +87,42 @@ class App:
                         self.g_pos.append([xidx, yidx])
                     elif char == 'B':
                         pygame.draw.rect(self.background, BLACK, (xidx * self.cell_width, yidx * self.cell_height, self.cell_width, self.cell_height))
+
+    def generate_randomly(self):
+        game_map = [[0 for x in range(28)] for x in range(30)]
+        isGhostPlaced = False
+        isPlayerPlaced = False
+        for y in range(30):
+            for x in range(28):
+                if x == 0 or x == 27 or y == 0 or y == 29:
+                    game_map[y][x] = '1'
+                    self.walls.append(vec(x, y))
+                elif not isGhostPlaced:
+                    x, y = randint(0, 27), randint(0, 29)
+                    while game_map[y][x] != 0:
+                        x, y = randint(0, 27), randint(0, 29)
+                    game_map[y][x] = '2'
+                    self.g_pos.append([x, y])
+                    isGhostPlaced = True
+                elif not isPlayerPlaced:
+                    x, y = randint(0, 27), randint(0, 29)
+                    while game_map[y][x] != 0:
+                        x, y = randint(0, 27), randint(0, 29)
+                    game_map[y][x] = 'P'
+                    self.p_pos = [x, y]
+                    isPlayerPlaced = True
+                else:
+                    chance = randint(1, 3)
+                    if chance == 1:
+                        game_map[y][x] = '1'
+                        self.walls.append(vec(x, y))
+
+        for y in range(30):
+            for x in range(28):
+                if game_map[y][x] == 0:
+                    game_map[y][x] = 'C'
+                    self.coins.append(vec(x, y))
+                    
 
     # Getting high score from a file
     def get_high_score(self):
@@ -282,7 +320,7 @@ class App:
 
             for cell in path:
                 pix_pos = self.get_pixel_pos_from_grid(cell)
-                pygame.draw.rect(self.screen, GREEN,
+                pygame.draw.rect(self.screen, BROWN,
                                 (pix_pos[0] - 8, pix_pos[1] - 8, self.cell_width - 5, self.cell_height - 5))
 
     def calculate_path_and_time(self, algo_function, ghost):
