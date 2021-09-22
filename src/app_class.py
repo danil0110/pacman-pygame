@@ -2,6 +2,7 @@ import pygame
 import sys
 import os.path
 import copy
+from timeit import default_timer as timer
 from settings import *
 from player_class import *
 from ghost_class import *
@@ -41,6 +42,9 @@ class App:
                 self.play_events()
                 self.play_update()
                 self.play_draw()
+            elif self.state == 'pause':
+                self.pause_events()
+                self.pause_draw()
             elif self.state == 'game over':
                 self.game_over_events()
                 self.game_over_update()
@@ -66,7 +70,7 @@ class App:
         self.background = pygame.transform.scale(self.background, (MAZE_WIDTH, MAZE_HEIGHT))
 
         # Opening maze file and creating walls list with their coords
-        with open('assets/walls.txt', 'r') as file:
+        with open('assets/algos_test.txt', 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == '1':
@@ -110,6 +114,12 @@ class App:
         for coin in self.coins:
             pygame.draw.rect(self.background, (167, 167, 0), (coin.x * self.cell_width, coin.y * self.cell_height, self.cell_width, self.cell_height))
 
+    def get_pixel_pos_from_grid(self, element):
+        return vec(
+            (element[0] * self.cell_width) + self.cell_width // 2,
+            (element[1] * self.cell_height) + TOP_BOTTOM_MARGIN // 2 + self.cell_height // 2
+        )
+    
     def restart(self, is_after_win = False):
         if not is_after_win:
             self.player.lives = 3
@@ -121,7 +131,7 @@ class App:
 
         self.coins = []
         self.super_food = []
-        with open('assets/walls.txt', 'r') as file:
+        with open('assets/algos_test.txt', 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == 'C':
@@ -175,6 +185,8 @@ class App:
                     self.player.move(vec(0, 1))
                 if event.key == pygame.K_LEFT:
                     self.player.move(vec(-1, 0))
+                if event.key == pygame.K_p:
+                    self.state = 'pause'
 
     def play_update(self):
         if self.player.winner:
@@ -238,6 +250,49 @@ class App:
             pygame.draw.circle(self.screen, (167, 167, 0),
                                (int(food.x * self.cell_width + self.cell_width // 2),
                                 int(food.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 6)
+
+
+# PAUSE
+    def pause_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_SPACE or event.key == pygame.K_p):
+                self.state = 'play'
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+                self.draw_path('dfs')
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
+                self.draw_path('bfs')
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
+                self.draw_path('ucs')
+
+    def draw_path(self, algorithm):
+        for ghost in self.ghosts:
+            if algorithm == 'bfs':
+                path, time = self.calculate_path_and_time(ghost.BFS, ghost)
+            elif algorithm == 'dfs':
+                path, time = self.calculate_path_and_time(ghost.DFS, ghost)
+            else:
+                path, time = self.calculate_path_and_time(ghost.UCS, ghost)
+
+            self.draw_text('{} - {}'.format(algorithm, time), self.screen, [
+                WIDTH // 2, HEIGHT - 25], 14, GREY, START_FONT)
+
+            for cell in path:
+                pix_pos = self.get_pixel_pos_from_grid(cell)
+                pygame.draw.rect(self.screen, (0, 255, 0),
+                                (pix_pos[0] - 8, pix_pos[1] - 8, self.cell_width - 5, self.cell_height - 5))
+
+    def calculate_path_and_time(self, algo_function, ghost):
+        start_time = timer()
+        path = algo_function([int(ghost.grid_pos.x), int(ghost.grid_pos.y)],
+                             [int(self.player.grid_pos[0]), int(self.player.grid_pos[1])])
+        end_time = timer()
+        final_time = (end_time - start_time) * 1000
+        return path, final_time
+
+    def pause_draw(self):
+        pygame.display.update()
 
 
 # GAME OVER

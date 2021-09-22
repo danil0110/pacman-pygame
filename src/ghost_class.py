@@ -19,6 +19,7 @@ class Ghost:
         # self.initial_personality = self.set_personality()
         self.initial_personality = 'slow'
         self.personality = self.initial_personality
+        self.algorithm = 'bfs'
         self.target = None
         # self.speed = self.set_speed()
         self.speed = 1
@@ -109,8 +110,15 @@ class Ghost:
         return vec(xdir, ydir)
 
     def find_next_cell_in_path(self, target):
-        path = self.BFS([int(self.grid_pos.x), int(self.grid_pos.y)],
-                        [int(target[0]), int(target[1])])
+        if self.algorithm == 'bfs':
+            path = self.BFS([int(self.grid_pos.x), int(self.grid_pos.y)],
+                            [int(target[0]), int(target[1])])
+        elif self.algorithm == 'dfs':
+            path = self.DFS([int(self.grid_pos.x), int(self.grid_pos.y)],
+                            [int(target[0]), int(target[1])])
+        else:
+            path = self.UCS([int(self.grid_pos.x), int(self.grid_pos.y)],
+                            [int(target[0]), int(target[1])])
         return path[1]
 
     def BFS(self, start, target):
@@ -137,6 +145,44 @@ class Ghost:
                                 if grid[next_cell[1]][next_cell[0]] != 1:
                                     queue.append(next_cell)
                                     path.append({'Current': current, 'Next': next_cell})
+        shortest = [target]
+        while target != start:
+            for step in path:
+                if step['Next'] == target:
+                    target = step['Current']
+                    shortest.insert(0, step['Current'])
+
+        return shortest
+
+    def DFS(self, start, target):
+        grid = [[0 for x in range(28)] for x in range(30)]
+        for cell in self.app.walls:
+            if cell.x < 28 and cell.y < 30:
+                grid[int(cell.y)][int(cell.x)] = 1
+        stack = [start]
+        path = []
+        visited = []
+        while stack:
+            current = stack[len(stack) - 1]
+            path.append(current)
+            visited.append(current)
+            if current == target:
+                break
+            else:
+                neighbours = [[0, -1], [1, 0], [0, 1], [-1, 0]]
+                for neighbour in neighbours:
+                    if neighbour[0] + current[0] >= 0 and neighbour[0] + current[0] < len(grid[0]):
+                        if neighbour[1] + current[1] >= 0 and neighbour[1] + current[1] < len(grid):
+                            next_cell = [neighbour[0] + current[0], neighbour[1] + current[1]]
+                            stack.append(next_cell)
+                            if next_cell not in visited:
+                                if grid[next_cell[1]][next_cell[0]] != 1:
+                                    stack.append(next_cell)
+                                    # path.append({'Current': current, 'Next': next_cell})
+                            else:
+                                stack.pop()
+                                path.pop()
+        
         shortest = [target]
         while target != start:
             for step in path:
