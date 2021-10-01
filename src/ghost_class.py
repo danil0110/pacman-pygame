@@ -2,6 +2,7 @@ import pygame
 import random
 from queue import PriorityQueue
 from settings import *
+from a_star_algorithm import a_star
 
 vec = pygame.math.Vector2
 
@@ -117,16 +118,21 @@ class Ghost:
         elif self.algorithm == 'dfs':
             path = self.DFS([int(self.grid_pos.x), int(self.grid_pos.y)],
                             [int(target[0]), int(target[1])])
-        else:
+        elif self.algorithm == 'ucs':
             path = self.UCS([int(self.grid_pos.x), int(self.grid_pos.y)],
                             [int(target[0]), int(target[1])])
+        else:
+            path = a_star(self.app.walls,
+                          [int(self.grid_pos.x), int(self.grid_pos.y)],
+                          [int(target[0]), int(target[1])])
         return path[1]
 
     def get_neighbours(self, node, grid):
         neighbours = [[0, -1], [1, 0], [0, 1], [-1, 0]]
         neighbour_nodes = list(filter(
             lambda current: (node[0] + current[0] >= 0 and node[0] + current[0] < len(grid[0])) and
-            (node[1] + current[1] >= 0 and node[1] + current[1] < len(grid)), neighbours
+            (node[1] + current[1] >= 0 and node[1] + current[1] < len(grid)) and
+            (grid[node[1] + current[1]][node[0] + current[0]] != 1), neighbours
         ))
         return neighbour_nodes
 
@@ -149,9 +155,8 @@ class Ghost:
                 for neighbour in neighbours:
                     next_cell = [neighbour[0] + current[0], neighbour[1] + current[1]]
                     if next_cell not in visited:
-                        if grid[next_cell[1]][next_cell[0]] != 1:
-                            queue.append(next_cell)
-                            path.append({'Current': current, 'Next': next_cell})
+                        queue.append(next_cell)
+                        path.append({'Current': current, 'Next': next_cell})
         shortest = [target]
         while target != start:
             for step in path:
@@ -180,9 +185,8 @@ class Ghost:
             for neighbour in neighbours:
                 next_cell = [neighbour[0] + current[0], neighbour[1] + current[1]]
                 if next_cell not in visited:
-                    if grid[next_cell[1]][next_cell[0]] != 1:
-                        stack.append(next_cell)
-                        path.append({"Current": current, "Next": next_cell})
+                    stack.append(next_cell)
+                    path.append({"Current": current, "Next": next_cell})
         
         final_path = [target]
         while target != start:
@@ -214,9 +218,8 @@ class Ghost:
             for neighbour in neighbours:
                 next_cell = [neighbour[0] + current[0], neighbour[1] + current[1]]
                 if next_cell not in visited:
-                    if grid[next_cell[1]][next_cell[0]] != 1:
-                        queue.put((cost + 1, next_cell))
-                        path.append({"Current": current, "Next": next_cell})
+                    queue.put((cost + 1, next_cell))
+                    path.append({"Current": current, "Next": next_cell})
 
         final_path = [target]
         while target != start:
