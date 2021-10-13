@@ -88,40 +88,49 @@ class App:
                     elif char == 'B':
                         pygame.draw.rect(self.background, BLACK, (xidx * self.cell_width, yidx * self.cell_height, self.cell_width, self.cell_height))
 
-    def generate_randomly(self):
-        game_map = [[0 for x in range(28)] for x in range(30)]
-        isGhostPlaced = False
-        isPlayerPlaced = False
-        for y in range(30):
-            for x in range(28):
-                if x == 0 or x == 27 or y == 0 or y == 29:
-                    game_map[y][x] = '1'
-                    self.walls.append(vec(x, y))
-                elif not isGhostPlaced:
-                    x, y = randint(0, 27), randint(0, 29)
-                    while game_map[y][x] != 0:
-                        x, y = randint(0, 27), randint(0, 29)
-                    game_map[y][x] = '2'
-                    self.g_pos.append([x, y])
-                    isGhostPlaced = True
-                elif not isPlayerPlaced:
-                    x, y = randint(0, 27), randint(0, 29)
-                    while game_map[y][x] != 0:
-                        x, y = randint(0, 27), randint(0, 29)
-                    game_map[y][x] = 'P'
-                    self.p_pos = [x, y]
-                    isPlayerPlaced = True
-                else:
-                    chance = randint(1, 3)
-                    if chance == 1:
-                        game_map[y][x] = '1'
-                        self.walls.append(vec(x, y))
+    # def generate_randomly(self):
+    #     game_map = [[0 for x in range(28)] for x in range(30)]
+    #     isGhostPlaced = False
+    #     isPlayerPlaced = False
+    #     for y in range(30):
+    #         for x in range(28):
+    #             if x == 0 or x == 27 or y == 0 or y == 29:
+    #                 game_map[y][x] = '1'
+    #                 self.walls.append(vec(x, y))
+    #             elif not isGhostPlaced:
+    #                 x, y = randint(0, 27), randint(0, 29)
+    #                 while game_map[y][x] != 0:
+    #                     x, y = randint(0, 27), randint(0, 29)
+    #                 game_map[y][x] = '2'
+    #                 self.g_pos.append([x, y])
+    #                 isGhostPlaced = True
+    #             elif not isPlayerPlaced:
+    #                 x, y = randint(0, 27), randint(0, 29)
+    #                 while game_map[y][x] != 0:
+    #                     x, y = randint(0, 27), randint(0, 29)
+    #                 game_map[y][x] = 'P'
+    #                 self.p_pos = [x, y]
+    #                 isPlayerPlaced = True
+    #             else:
+    #                 chance = randint(1, 4)
+    #                 if chance == 1:
+    #                     game_map[y][x] = '1'
+    #                     self.walls.append(vec(x, y))
 
-        for y in range(30):
-            for x in range(28):
-                if game_map[y][x] == 0:
-                    game_map[y][x] = 'C'
-                    self.coins.append(vec(x, y))
+    #     for y in range(30):
+    #         for x in range(28):
+    #             if game_map[y][x] == 0:
+    #                 game_map[y][x] = 'C'
+    #                 self.coins.append(vec(x, y))
+
+    #     self.save_map_to_file(game_map)
+
+    # def save_map_to_file(self, game_map):
+    #     with open('assets/random_map.txt', 'w') as file:
+    #         for y in range(len(game_map)):
+    #             for x in range(len(game_map[0])):
+    #                 file.write(game_map[y][x])
+    #             file.write('\n')
                     
 
     # Getting high score from a file
@@ -214,21 +223,22 @@ class App:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and self.player.winner == False:
-                if event.key == pygame.K_UP:
-                    self.player.move(vec(0, -1))
-                if event.key == pygame.K_RIGHT:
-                    self.player.move(vec(1, 0))
-                if event.key == pygame.K_DOWN:
-                    self.player.move(vec(0, 1))
-                if event.key == pygame.K_LEFT:
-                    self.player.move(vec(-1, 0))
-                if event.key == pygame.K_p:
-                    self.state = 'pause'
+            if not self.player.auto_play:
+                if event.type == pygame.KEYDOWN and self.player.winner == False:
+                    if event.key == pygame.K_UP:
+                        self.player.move(vec(0, -1))
+                    if event.key == pygame.K_RIGHT:
+                        self.player.move(vec(1, 0))
+                    if event.key == pygame.K_DOWN:
+                        self.player.move(vec(0, 1))
+                    if event.key == pygame.K_LEFT:
+                        self.player.move(vec(-1, 0))
+                    if event.key == pygame.K_p:
+                        self.state = 'pause'
 
     def play_update(self):
         if self.player.winner:
-            if self.pause_time is None:
+            if self.pause_time is None: 
                 self.pause_time = pygame.time.get_ticks()
             seconds = (pygame.time.get_ticks() - self.pause_time) / 1000
             if seconds > 3:
