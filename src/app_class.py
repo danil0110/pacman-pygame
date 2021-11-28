@@ -1,12 +1,8 @@
-import pygame
-import sys
-import os.path
-import copy
-from random import randint
-from timeit import default_timer as timer
-from settings import *
+import pygame.draw
+
 from player_class import *
-from ghost_class import *
+from enemy_class import *
+from maze_generation import generate_stable_maze
 
 pygame.init()
 vec = pygame.math.Vector2
@@ -14,25 +10,26 @@ vec = pygame.math.Vector2
 
 class App:
     def __init__(self):
-        pygame.display.set_caption('Pac-Man')
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
+        self.start_time = None
+        self.current_time = None
         self.running = True
         self.state = 'start'
         self.cell_width = MAZE_WIDTH // COLS
         self.cell_height = MAZE_HEIGHT // ROWS
         self.walls = []
         self.coins = []
-        self.super_food = []
-        self.ghosts = []
-        self.g_pos = []
+        self.game_field = [[0 for x in range(COLS)] for x in range(ROWS)]
+        self.enemies = []
+        self.e_pos = []
         self.p_pos = None
-        self.pause_time = None
+        self.result_is_saved = False
         self.load()
-        # self.generate_randomly()
         self.player = Player(self, vec(self.p_pos))
-        self.get_high_score()
-        self.make_ghosts()
+        self.make_enemies()
+        self.pressed_cells = []
+        self.minimax = Minimax(self.player, self.enemies, 6, "alpha-beta")
 
     def run(self):
         while self.running:
@@ -40,11 +37,11 @@ class App:
                 self.start_events()
                 self.start_update()
                 self.start_draw()
-            elif self.state == 'play':
-                self.play_events()
-                self.play_update()
-                self.play_draw()
-            elif self.state == 'pause':
+            elif self.state == 'playing':
+                self.playing_events()
+                self.playing_update()
+                self.playing_draw()
+            elif self.state == "pause":
                 self.pause_events()
                 self.pause_draw()
             elif self.state == 'game over':
@@ -57,10 +54,25 @@ class App:
         pygame.quit()
         sys.exit()
 
-# HELPERS
-    def draw_text(self, string, screen, pos, size, color, font_name, centered = False):
+    # HELPER FUNCTIONS
+
+    def draw_path(self, path, color):
+        for cell_pos in path:
+            pix_pos = self.player.get_pix_pos_from_grid_pos_for_rect(cell_pos[0], cell_pos[1])
+            pygame.draw.rect(self.screen, color,
+                             (pix_pos[0], pix_pos[1], self.cell_width, self.cell_height))
+
+    def draw_pressed_cells(self):
+        for cell in self.pressed_cells:
+            cell_pix = self.player.get_pix_pos_from_grid_pos_for_rect(cell[0], cell[1])
+            pygame.draw.rect(self.screen, RED, (cell_pix[0], cell_pix[1], self.cell_width, self.cell_height), 0)
+
+    def pos_is_in_field(self, pos):
+        return 0 <= pos[0] < COLS and 0 <= pos[1] < ROWS
+
+    def draw_text(self, words, screen, pos, size, colour, font_name, centered=False):
         font = pygame.font.SysFont(font_name, size)
-        text = font.render(string, False, color)
+        text = font.render(words, False, colour)
         text_size = text.get_size()
         if centered:
             pos[0] = pos[0] - text_size[0] // 2
@@ -68,305 +80,228 @@ class App:
         screen.blit(text, pos)
 
     def load(self):
-        self.background = pygame.image.load('assets/maze.png')
-        self.background = pygame.transform.scale(self.background, (MAZE_WIDTH, MAZE_HEIGHT))
+        # random
+        # carve_out_maze(self.game_field)
 
-        # Opening maze file and creating walls list with their coords
-        with open('assets/algos_test.txt', 'r') as file:
-            for yidx, line in enumerate(file):
-                for xidx, char in enumerate(line):
-                    if char == '1':
-                        self.walls.append(vec(xidx, yidx))
-                    elif char == 'C':
-                        self.coins.append(vec(xidx, yidx))
-                    elif char == 'S':
-                        self.super_food.append(vec(xidx, yidx))
-                    elif char == 'P':
-                        self.p_pos = [xidx, yidx]
-                    elif char in ['2', '3', '4', '5']:
-                        self.g_pos.append([xidx, yidx])
-                    elif char == 'B':
-                        pygame.draw.rect(self.background, BLACK, (xidx * self.cell_width, yidx * self.cell_height, self.cell_width, self.cell_height))
+        # stable
+        self.game_field = generate_stable_maze()
 
-    # def generate_randomly(self):
-    #     game_map = [[0 for x in range(28)] for x in range(30)]
-    #     isGhostPlaced = False
-    #     isPlayerPlaced = False
-    #     for y in range(30):
-    #         for x in range(28):
-    #             if x == 0 or x == 27 or y == 0 or y == 29:
-    #                 game_map[y][x] = '1'
-    #                 self.walls.append(vec(x, y))
-    #             elif not isGhostPlaced:
-    #                 x, y = randint(0, 27), randint(0, 29)
-    #                 while game_map[y][x] != 0:
-    #                     x, y = randint(0, 27), randint(0, 29)
-    #                 game_map[y][x] = '2'
-    #                 self.g_pos.append([x, y])
-    #                 isGhostPlaced = True
-    #             elif not isPlayerPlaced:
-    #                 x, y = randint(0, 27), randint(0, 29)
-    #                 while game_map[y][x] != 0:
-    #                     x, y = randint(0, 27), randint(0, 29)
-    #                 game_map[y][x] = 'P'
-    #                 self.p_pos = [x, y]
-    #                 isPlayerPlaced = True
-    #             else:
-    #                 chance = randint(1, 4)
-    #                 if chance == 1:
-    #                     game_map[y][x] = '1'
-    #                     self.walls.append(vec(x, y))
+        for yidx, row in enumerate(self.game_field):
+            for xidx, cell in enumerate(row):
+                if cell == 1:
+                    self.walls.append(vec(xidx, yidx))
+                elif cell == 0:
+                    self.coins.append(vec(xidx, yidx))
 
-    #     for y in range(30):
-    #         for x in range(28):
-    #             if game_map[y][x] == 0:
-    #                 game_map[y][x] = 'C'
-    #                 self.coins.append(vec(x, y))
+        self.coins.remove(vec(1, 1))
+        self.p_pos = (vec(1, 1))
 
-    #     self.save_map_to_file(game_map)
+        self.add_enemies(2)
 
-    # def save_map_to_file(self, game_map):
-    #     with open('assets/random_map.txt', 'w') as file:
-    #         for y in range(len(game_map)):
-    #             for x in range(len(game_map[0])):
-    #                 file.write(game_map[y][x])
-    #             file.write('\n')
-                    
+    def add_enemies(self, count):
+        for enemy_num in range(0, count):
+            self.e_pos.append(
+                [self.coins[len(self.coins) - (enemy_num + 1)].x, self.coins[len(self.coins) - (enemy_num + 1)].y])
 
-    # Getting high score from a file
-    def get_high_score(self):
-        # Check if file exists
-        if os.path.isfile('../highscore.txt'):
-            with open('../highscore.txt', 'r') as file:
-                self.player.high_score = int(file.read())
-        else:
-            self.set_high_score(0)
+    def update_time(self):
+        self.current_time = str((pygame.time.get_ticks() - self.start_time) / 1000) + str((pygame.time.get_ticks() - self.start_time) % 1000)
 
-    def set_high_score(self, new_score):
-        self.player.high_score = new_score
-        with open('../highscore.txt', 'w') as file:
-            file.write(str(new_score))
+    def make_enemies(self):
+        for idx, pos in enumerate(self.e_pos):
+            enemy_type = "default"
+            if idx == 1:
+                enemy_type = "bfs"
+            self.enemies.append(Enemy(self, vec(pos), enemy_type))
 
-    def make_ghosts(self):
-        for idx, pos in enumerate(self.g_pos):
-            self.ghosts.append(Ghost(self, vec(pos), idx))
+    def check_death(self):
+        for enemy in self.enemies:
+            diff = [enemy.pix_pos.x - self.player.pix_pos.x, enemy.pix_pos.y - self.player.pix_pos.y]
+            if abs(diff[0]) < (self.cell_width // 4) and abs(diff[1]) < (self.cell_width // 4):
+                return True
+        return False
 
-    def draw_grid(self):
-        for x in range(MAZE_WIDTH // self.cell_width):
-            pygame.draw.line(self.background, GREY, (x * self.cell_width, 0), (x * self.cell_width, MAZE_HEIGHT))
-        for y in range(MAZE_HEIGHT // self.cell_height):
-            pygame.draw.line(self.background, GREY, (0, y * self.cell_height), (MAZE_WIDTH, y * self.cell_height))
-        # for wall in self.walls:
-        #     pygame.draw.rect(self.background, (0, 255, 0), (wall.x * self.cell_width, wall.y * self.cell_height, self.cell_width, self.cell_height))
-        for coin in self.coins:
-            pygame.draw.rect(self.background, (167, 167, 0), (coin.x * self.cell_width, coin.y * self.cell_height, self.cell_width, self.cell_height))
-
-    def get_pixel_pos_from_grid(self, element):
-        return vec(
-            (element[0] * self.cell_width) + self.cell_width // 2,
-            (element[1] * self.cell_height) + TOP_BOTTOM_MARGIN // 2 + self.cell_height // 2
-        )
-    
-    def restart(self, is_after_win = False):
-        if not is_after_win:
-            self.player.lives = 3
-            self.player.current_score = 0
-        self.player.reset_position()
-        for ghost in self.ghosts:
-            ghost.reset_position()
-            ghost.personality = 'slow'
+    def reset(self):
+        self.player.lives = LIVES
+        self.player.current_score = 0
+        self.player.grid_pos = vec(self.player.starting_pos)
+        self.player.pix_pos = self.player.get_pix_pos()
+        self.player.direction *= 0
+        self.start_time = pygame.time.get_ticks()
+        self.result_is_saved = False
+        for enemy in self.enemies:
+            enemy.grid_pos = vec(enemy.starting_pos)
+            enemy.pix_pos = enemy.get_pix_pos()
+            enemy.direction *= 0
 
         self.coins = []
-        self.super_food = []
-        with open('assets/algos_test.txt', 'r') as file:
-            for yidx, line in enumerate(file):
-                for xidx, char in enumerate(line):
-                    if char == 'C':
-                        self.coins.append(vec(xidx, yidx))
-                    if char == 'S':
-                        self.super_food.append(vec(xidx, yidx))
-        self.state = 'play'
+        for yidx, row in enumerate(self.game_field):
+            for xidx, cell in enumerate(row):
+                if cell == 0:
+                    self.coins.append(vec(xidx, yidx))
 
-    def win(self):
-        self.player.winner = True
-        self.player.direction *= 0
-        
-        for ghost in self.ghosts:
-            ghost.personality = 'stay'
-            ghost.direction *= 0
-        
-        
+        self.state = "playing"
 
-# START
+    # START
+
     def start_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                self.state = 'play'
+                self.state = 'playing'
+                self.start_time = pygame.time.get_ticks()
 
     def start_update(self):
         pass
 
     def start_draw(self):
         self.screen.fill(BLACK)
-        self.draw_text('PUSH SPACE BAR', self.screen, [WIDTH // 2, HEIGHT // 2 - 25], START_TEXT_SIZE,
-                       (170, 132, 58), START_FONT, True)
-        self.draw_text('1 PLAYER ONLY', self.screen, [WIDTH // 2, HEIGHT // 2 + 25], START_TEXT_SIZE,
-                       (44, 167, 198), START_FONT, True)
-        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [3, 0], START_TEXT_SIZE,
-                       WHITE, START_FONT)
+        self.draw_text('PUSH SPACE BAR', self.screen, [
+            WIDTH // 2, HEIGHT // 2 - 50], START_TEXT_SIZE, (170, 132, 58), START_FONT, centered=True)
+        self.draw_text('1 PLAYER ONLY', self.screen, [
+            WIDTH // 2, HEIGHT // 2 + 50], START_TEXT_SIZE, (44, 167, 198), START_FONT, centered=True)
         pygame.display.update()
 
-# PLAY
-    def play_events(self):
+    ########################### PLAYING FUNCTIONS ##################################
+
+    def playing_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if not self.player.auto_play:
-                if event.type == pygame.KEYDOWN and self.player.winner == False:
-                    if event.key == pygame.K_UP:
-                        self.player.move(vec(0, -1))
-                    if event.key == pygame.K_RIGHT:
-                        self.player.move(vec(1, 0))
-                    if event.key == pygame.K_DOWN:
-                        self.player.move(vec(0, 1))
-                    if event.key == pygame.K_LEFT:
-                        self.player.move(vec(-1, 0))
-                    if event.key == pygame.K_p:
-                        self.state = 'pause'
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.player.move(vec(-1, 0))
+                if event.key == pygame.K_RIGHT:
+                    self.player.move(vec(1, 0))
+                if event.key == pygame.K_UP:
+                    self.player.move(vec(0, -1))
+                if event.key == pygame.K_DOWN:
+                    self.player.move(vec(0, 1))
+                if event.key == pygame.K_p:
+                    self.state = "pause"
 
-    def play_update(self):
-        if self.player.winner:
-            if self.pause_time is None: 
-                self.pause_time = pygame.time.get_ticks()
-            seconds = (pygame.time.get_ticks() - self.pause_time) / 1000
-            if seconds > 3:
-                self.pause_time = None
-                self.player.winner = False
-                self.restart(True)
+    def playing_update(self):
 
-        self.player.update()
-        for ghost in self.ghosts:
-            ghost.update()
+        self.update_time()
 
-        for ghost in self.ghosts:
-            if ghost.grid_pos == self.player.grid_pos:
-                if ghost.personality not in ['scared', 'died']:
-                    self.decrease_lives()
-                else:
-                    self.player.current_score += (2 ** self.player.kill_multiplier) * 100
-                    if self.player.kill_multiplier < 4:
-                        self.player.kill_multiplier += 1
-                    ghost.start_respawn()
+        if self.player.time_to_move():
+            best_move = self.minimax.run()
+            self.player.move(best_move)
+            self.player.direction = best_move
 
+        self.player.update("yes")
+        for enemy in self.enemies:
+            enemy.update()
 
-    def play_draw(self):
+        if self.check_death():
+            self.remove_life()
+
+        if len(self.coins) == 0:
+            self.state = "game over"
+
+    def playing_draw(self):
         self.screen.fill(BLACK)
-        self.screen.blit(self.background, (0, TOP_BOTTOM_MARGIN // 2))
+        self.screen.blit(self.screen, (TOP_BOTTOM_BUFFER // 2, TOP_BOTTOM_BUFFER // 2))
         self.draw_coins()
-        self.draw_super_food()
-        # self.draw_grid()
-        self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score), self.screen, [20, 0], 18, WHITE, START_FONT)
-        self.draw_text('HIGH SCORE: {}'.format(self.player.high_score), self.screen, [WIDTH // 2 + 40, 0], 18, WHITE, START_FONT)
-        self.player.draw()
-        for ghost in self.ghosts:
-            ghost.draw()
+        for wall in self.walls:
+            xidx, yidx = wall
+            pygame.draw.rect(self.screen, BLUE, (
+            TOP_BOTTOM_BUFFER // 2 + xidx * self.cell_width, TOP_BOTTOM_BUFFER // 2 + yidx * self.cell_height,
+            self.cell_width, self.cell_height))
 
+        self.draw_text('CURRENT SCORE: {}'.format(self.player.current_score),
+                       self.screen, [25, 6], 24, WHITE, START_FONT)
+        self.draw_text('TIME: {}'.format(self.current_time),
+                       self.screen, [WIDTH // 2 + 90, 6], 24, WHITE, START_FONT)
+
+        self.player.draw()
+        for enemy in self.enemies:
+            enemy.draw()
         pygame.display.update()
 
-    def decrease_lives(self):
+    def remove_life(self):
         self.player.lives -= 1
         if self.player.lives == 0:
-            self.state = 'game over'
-            self.player.current_score_saved = self.player.current_score
-            if self.player.current_score > self.player.high_score:
-                self.set_high_score(self.player.current_score)
+            self.state = "game over"
         else:
-            self.player.reset_position()
-            for ghost in self.ghosts:
-                ghost.reset_position()
+            self.player.grid_pos = vec(self.player.starting_pos)
+            self.player.pix_pos = self.player.get_pix_pos()
+            self.player.direction *= 0
+            for enemy in self.enemies:
+                enemy.grid_pos = vec(enemy.starting_pos)
+                enemy.pix_pos = enemy.get_pix_pos()
+                enemy.direction *= 0
 
     def draw_coins(self):
         for coin in self.coins:
-            pygame.draw.circle(self.screen, (167, 167, 0),
-                               (int(coin.x * self.cell_width + self.cell_width // 2),
-                                int(coin.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 2)
+            pygame.draw.circle(self.screen, (124, 123, 7),
+                               (int(coin.x * self.cell_width) + self.cell_width // 2 + TOP_BOTTOM_BUFFER // 2,
+                                int(coin.y * self.cell_height) + self.cell_height // 2 + TOP_BOTTOM_BUFFER // 2), 5)
 
-    def draw_super_food(self):
-        for food in self.super_food:
-            pygame.draw.circle(self.screen, (167, 167, 0),
-                               (int(food.x * self.cell_width + self.cell_width // 2),
-                                int(food.y * self.cell_height + self.cell_height // 2 + TOP_BOTTOM_MARGIN // 2)), 6)
+    # PAUSE
 
-
-# PAUSE
     def pause_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and (event.key == pygame.K_SPACE or event.key == pygame.K_p):
-                self.state = 'play'
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
-                self.draw_path('dfs')
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-                self.draw_path('bfs')
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
-                self.draw_path('ucs')
-
-    def draw_path(self, algorithm):
-        self.play_draw()
-        for ghost in self.ghosts:
-            ghost.set_algorithm(algorithm)
-            if algorithm == 'bfs':
-                path, time = self.calculate_path_and_time(ghost.BFS, ghost)
-            elif algorithm == 'dfs':
-                path, time = self.calculate_path_and_time(ghost.DFS, ghost)
-            else:
-                path, time = self.calculate_path_and_time(ghost.UCS, ghost)
-
-            self.draw_text('{} - {}, Length - {}'.format(algorithm, time, len(path)), self.screen, [
-                WIDTH // 2 - 100, HEIGHT - 25], 14, GREY, START_FONT)
-
-            for cell in path:
-                pix_pos = self.get_pixel_pos_from_grid(cell)
-                pygame.draw.rect(self.screen, BROWN,
-                                (pix_pos[0] - 8, pix_pos[1] - 8, self.cell_width - 5, self.cell_height - 5))
-
-    def calculate_path_and_time(self, algo_function, ghost):
-        start_time = timer()
-        path = algo_function([int(ghost.grid_pos.x), int(ghost.grid_pos.y)],
-                             [int(self.player.grid_pos[0]), int(self.player.grid_pos[1])])
-        end_time = timer()
-        final_time = (end_time - start_time) * 1000
-        return path, final_time
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.state = 'playing'
 
     def pause_draw(self):
+        self.draw_text('PAUSE', self.screen, [
+            WIDTH // 2, HEIGHT // 2 - 20], 24, WHITE, START_FONT, centered=True)
+        self.draw_text('PUSH SPACE BAR TO CONTINUE', self.screen, [
+            WIDTH // 2, HEIGHT - 15], 14, WHITE, START_FONT, centered=True)
         pygame.display.update()
 
+    # GAME OVER
 
-# GAME OVER
     def game_over_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                self.restart()
+                self.reset()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                if not self.result_is_saved:
+                    f = open('game_stats.csv', 'a')
+                    output = str(self.player.current_score) + ',' + str(self.current_time) + ',' + str(self.player.search_type) + '\n' 
+                    f.write(output)
+                    f.close()
+                    # load_data_to_db([self.player.current_score, self.current_time, self.player.search_type])
+                    self.result_is_saved = True
 
     def game_over_update(self):
         pass
 
     def game_over_draw(self):
         self.screen.fill(BLACK)
-        quit_text = 'PRESS ESC TO QUIT'
-        replay_text = 'PRESS SPACE BAR TO PLAY AGAIN'
-        high_score_text = 'HIGH SCORE: {}'.format(self.player.high_score)
-        current_score_text = 'CURRENT SCORE: {}'.format(self.player.current_score_saved)
-        self.draw_text('GAME OVER', self.screen, [WIDTH // 2, 80], 52, RED, 'arial black', True)
-        self.draw_text(current_score_text, self.screen, [WIDTH // 2, 170], 24, WHITE, 'arial', True)
-        self.draw_text(high_score_text, self.screen, [WIDTH // 2, 200], 24, WHITE, 'arial', True)
-        self.draw_text(replay_text, self.screen, [WIDTH // 2, HEIGHT // 2], 28, WHITE, 'arial', True)
-        self.draw_text(quit_text, self.screen, [WIDTH // 2,  HEIGHT // 2 + 100], 24, GREY, 'arial', True)
+        quit_text = "Press the escape button to QUIT"
+        again_text = "Press SPACE bar to PLAY AGAIN"
+        save_result_text = "Press S button to save your result"
+
+        if len(self.coins):
+            self.draw_text("GAME OVER", self.screen, [WIDTH // 2, 100], 52, RED, "arial", centered=True)
+        else:
+            self.draw_text("VICTORY", self.screen, [WIDTH // 2, 100], 52, GREEN, "arial", centered=True)
+
+        self.draw_text('SCORE: {}'.format(self.player.current_score),
+                       self.screen, [25, 6], 24, WHITE, START_FONT)
+        self.draw_text('TIME: {}'.format(self.current_time),
+                       self.screen, [WIDTH // 2 + 90, 6], 24, WHITE, START_FONT)
+
+        self.draw_text(save_result_text, self.screen, [WIDTH // 2, HEIGHT // 3], 32, GOLD, "arial", centered=True)
+
+        if self.result_is_saved:
+            self.draw_text("YOUR RESULT HAS BEEN SAVED", self.screen, [
+                WIDTH // 2, HEIGHT // 2.5], 24, GREEN, "arial", centered=True)
+
+        self.draw_text(again_text, self.screen, [
+            WIDTH // 2, HEIGHT // 1.7], 36, (190, 190, 190), "arial", centered=True)
+        self.draw_text(quit_text, self.screen, [
+            WIDTH // 2, HEIGHT // 1.4], 36, (190, 190, 190), "arial", centered=True)
+
         pygame.display.update()

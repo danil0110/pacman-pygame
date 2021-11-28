@@ -3,3 +3,4 @@ venv
 src/__pycache__
 src/app_class.pyc
 highscore.txt
+game_stats.csv
